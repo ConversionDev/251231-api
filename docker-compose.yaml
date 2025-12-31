@@ -1,0 +1,42 @@
+# ============================================================================
+# Gateway Service Docker Compose 설정
+# ============================================================================
+# API Gateway + OAuth Service + User Service 통합 실행용
+#
+# 사용 예시:
+#   cd api.kanggyeonggu.store
+#   docker compose up -d
+#
+# 포함 서비스:
+#   - Gateway (8080) - OAuth Service와 User Service 포함
+# ============================================================================
+
+services:
+  # ===================
+  # API Gateway (OAuth Service + User Service 통합)
+  # ===================
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gateway
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env # 프로젝트 루트의 .env 파일 사용
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-default-secret-key}
+    networks:
+      - gateway-network
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+networks:
+  gateway-network:
+    driver: bridge
+    name: gateway-network
