@@ -16,9 +16,12 @@ services:
   # API Gateway (OAuth Service + User Service 통합)
   # ===================
   gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # Docker Hub 이미지 사용
+    image: rkdrudrn1031/api.kanggyeonggu.store:v1
+    # 로컬 빌드 사용 시 아래 주석 해제하고 위 image 주석 처리
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     container_name: gateway
     ports:
       - "8080:8080"
