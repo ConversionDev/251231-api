@@ -32,7 +32,6 @@ public class SecurityConfig {
                                 "/docs/**", // Swagger UI
                                 "/swagger-ui/**", // Swagger UI (대체 경로)
                                 "/swagger-ui.html", // Swagger UI (구버전)
-                                "/v3/api-docs/**", // OpenAPI 3.0 JSON
                                 "/docs/api-docs/**", // OpenAPI JSON
                                 "/auth/**", // OAuth 로그인 (카카오, 네이버, 구글)
                                 "/oauth2/**" // OAuth 콜백

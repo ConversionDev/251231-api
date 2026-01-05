@@ -32,11 +32,11 @@ spring:
   # Redis 설정 (Upstash)
   data:
     redis:
-      host: ${REDIS_HOST:emerging-whippet-43982.upstash.io}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:AavOAAIncDJhNGE4NDc3YzU4YmU0ODFlYTQ1ZmQ3Nzk0MjE4YWUxMnAyNDM5ODI}
+      host: ${UPSTASH_REDIS_HOST}
+      port: ${UPSTASH_REDIS_PORT}
+      password: ${UPSTASH_REDIS_PASSWORD}
       ssl:
-        enabled: ${REDIS_SSL:true}
+        enabled: true
 
 server:
   port: 8080
