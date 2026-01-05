@@ -61,15 +61,33 @@ jobs:
                       IMAGE="rkdrudrn1031/api.kanggyeonggu.store:v1"
                       CONTAINER="kanggyeonggu-api"
 
+                      # .env 파일 경로 찾기 (/home/ubuntu/api/.env)
+                      if [ -f "$HOME/api/.env" ]; then
+                          ENV_FILE="$HOME/api/.env"
+                      elif [ -f "$HOME/.env" ]; then
+                          ENV_FILE="$HOME/.env"
+                      else
+                          echo "Warning: .env file not found, trying without it"
+                          ENV_FILE=""
+                      fi
+
                       docker pull $IMAGE
 
                       docker stop $CONTAINER || true
                       docker rm $CONTAINER || true
 
-                      docker run -d --name $CONTAINER \
-                        --restart unless-stopped \
-                        -p 8080:8080 \
-                        --env-file ~/.env \
-                        $IMAGE
+                      # .env 파일이 있으면 사용, 없으면 환경 변수 없이 실행
+                      if [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ]; then
+                          docker run -d --name $CONTAINER \
+                            --restart unless-stopped \
+                            -p 8080:8080 \
+                            --env-file "$ENV_FILE" \
+                            $IMAGE
+                      else
+                          docker run -d --name $CONTAINER \
+                            --restart unless-stopped \
+                            -p 8080:8080 \
+                            $IMAGE
+                      fi
 
                       docker image prune -f
