@@ -14,8 +14,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins(
-                    "http://localhost:3000",
-                    "http://localhost:4000"
+                        "http://localhost:3000",
+                        "http://localhost:4000",
+                        "https://www.kanggyeonggu.store",
+                        "https://kanggyeonggu.store",
+                        "https://251203-erp.vercel.app" // Vercel 기본 도메인
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
@@ -23,4 +26,3 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .maxAge(3600);
     }
 }
-
