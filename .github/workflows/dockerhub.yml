@@ -69,6 +69,7 @@ jobs:
                       docker run -d --name $CONTAINER \
                         --restart unless-stopped \
                         -p 8080:8080 \
+                        --env-file ~/.env \
                         $IMAGE
 
                       docker image prune -f
