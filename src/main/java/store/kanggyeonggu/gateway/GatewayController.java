@@ -41,4 +41,3 @@ public class GatewayController {
         return Mono.just(health);
     }
 }
-

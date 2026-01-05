@@ -7,26 +7,30 @@
 # 3. DockerHub에 v1 태그로 푸시
 # 4. EC2 서버에 SSH로 접속하여 자동 배포
 # ============================================================================
-
+#GitHub Actions 화면에 표시될 워크플로우 이름
 name: Build & Push API Image to DockerHub
 
 on:
     push:
         branches:
             - main
-    workflow_dispatch:
-
+    workflow_dispatch: #GitHub UI에서 수동 실행 버튼 활성화
+# 모든 job에서 공통으로 사용되는 전역 변수
 env:
     IMAGE_NAME: rkdrudrn1031/api.kanggyeonggu.store
 
 jobs:
     build-and-push:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-latest #GitHub가 미리 설치해 둔 최신 Ubuntu LTS 환경(VM)을 가져다 쓰는 것
 
         steps:
+            #git clone https://github.com/ConversionDev/251231-api.git
+            #cd 251231-api
+            #git checkout
             - name: Checkout source
               uses: actions/checkout@v4
 
+            #멀티 플랫폼 빌드는 서로 다른 아키텍처를 가진 여러 환경에서 동일하게 작동하는 **'범용 이미지'**를 만드는 과정입니다.
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
 
