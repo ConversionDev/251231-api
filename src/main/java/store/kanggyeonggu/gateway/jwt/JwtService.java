@@ -80,4 +80,25 @@ public class JwtService {
             return false;
         }
     }
+
+    /**
+     * JWT 만료 시간 반환 (밀리초)
+     */
+    public long getExpiration() {
+        return jwtExpiration;
+    }
+
+    /**
+     * 토큰의 남은 만료 시간 계산 (밀리초)
+     */
+    public long getRemainingExpiration(String token) {
+        try {
+            Claims claims = parseToken(token);
+            Date expiration = claims.getExpiration();
+            long remaining = expiration.getTime() - System.currentTimeMillis();
+            return Math.max(0, remaining);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 }

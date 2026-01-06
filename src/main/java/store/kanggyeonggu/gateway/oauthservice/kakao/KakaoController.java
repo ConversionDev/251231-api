@@ -6,18 +6,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import store.kanggyeonggu.gateway.jwt.AccessTokenService;
 import store.kanggyeonggu.gateway.jwt.JwtService;
 import store.kanggyeonggu.gateway.jwt.RefreshTokenService;
 import store.kanggyeonggu.gateway.oauthservice.response.*;
 import store.kanggyeonggu.gateway.oauthservice.service.OAuthUserService;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.data.redis.core.RedisTemplate;
 
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 
 // 카카오 OAuth2 인증 컨트롤러 (Spring MVC)
 @RestController
@@ -28,9 +27,7 @@ public class KakaoController {
     private final JwtService jwtService;
     private final OAuthUserService userService;
     private final RefreshTokenService refreshTokenService;
-    private final RedisTemplate<String, String> redisTemplate;
-    
-    private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
+    private final AccessTokenService accessTokenService;
 
     @Value("${kakao.rest-api-key}")
     private String kakaoRestApiKey;
@@ -45,17 +42,16 @@ public class KakaoController {
     private String frontendCallbackUrl;
 
     public KakaoController(
-            KakaoOAuthService kakaoOAuthService, 
-            JwtService jwtService, 
+            KakaoOAuthService kakaoOAuthService,
+            JwtService jwtService,
             OAuthUserService userService,
             RefreshTokenService refreshTokenService,
-            RedisTemplate<String, String> redisTemplate
-    ) {
+            AccessTokenService accessTokenService) {
         this.kakaoOAuthService = kakaoOAuthService;
         this.jwtService = jwtService;
         this.userService = userService;
         this.refreshTokenService = refreshTokenService;
-        this.redisTemplate = redisTemplate;
+        this.accessTokenService = accessTokenService;
     }
 
     // 카카오 로그인 URL 생성
@@ -79,8 +75,7 @@ public class KakaoController {
     @GetMapping("/callback")
     public ResponseEntity<Void> kakaoCallback(
             @RequestParam(required = false) String code,
-            HttpServletResponse httpResponse
-    ) {
+            HttpServletResponse httpResponse) {
         // GET 방식 (카카오 표준)
         if (code != null) {
             return processCallback(code, httpResponse);
@@ -122,26 +117,18 @@ public class KakaoController {
                     "kakao",
                     String.valueOf(kakaoId),
                     nickname,
-                    profileImageUrl
-            );
+                    profileImageUrl);
 
             // 5. JWT Access Token 생성 (DB에 저장된 user.id 사용)
             String jwtToken = jwtService.generateToken(user.getId(), user.getNickname());
-            System.out.println("JWT Access Token: " + jwtToken);
+            System.out.println("JWT Access Token 생성 완료");
 
-            // 6. Refresh Token 생성 및 HttpOnly 쿠키 설정 (XSS 방어)
-            String refreshToken = refreshTokenService.generateRefreshToken();
-            
-            // Redis에 Refresh Token 저장 (userId 매핑)
-            String redisKey = REFRESH_TOKEN_PREFIX + refreshToken;
-            redisTemplate.opsForValue().set(
-                redisKey,
-                user.getId().toString(),
-                refreshTokenService.getRefreshExpiration(),
-                TimeUnit.MILLISECONDS
-            );
-            System.out.println("✅ Refresh Token Redis 저장: " + redisKey);
-            
+            // 6. Access Token을 Redis에 저장 (Upstash)
+            accessTokenService.saveAccessToken(jwtToken, user.getId(), jwtService.getExpiration());
+
+            // 7. Refresh Token 생성 및 Neon DB에 저장
+            String refreshToken = refreshTokenService.createAndSaveRefreshToken(user);
+
             // HttpOnly 쿠키로 Refresh Token 설정
             refreshTokenService.setRefreshTokenCookie(httpResponse, refreshToken);
 
@@ -267,4 +254,3 @@ public class KakaoController {
         }
     }
 }
-
