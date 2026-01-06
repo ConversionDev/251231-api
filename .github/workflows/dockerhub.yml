@@ -4,7 +4,7 @@
 # main 브랜치에 push 시 자동으로 실행
 # 1. 소스 코드 체크아웃
 # 2. Docker 이미지 빌드
-# 3. DockerHub에 v1 태그로 푸시
+# 3. DockerHub에 v2 태그로 푸시
 # 4. EC2 서버에 SSH로 접속하여 자동 배포
 # ============================================================================
 #GitHub Actions 화면에 표시될 워크플로우 이름
@@ -46,7 +46,7 @@ jobs:
                   context: .
                   file: ./Dockerfile
                   push: true
-                  tags: ${{ env.IMAGE_NAME }}:v1
+                  tags: ${{ env.IMAGE_NAME }}:v2
 
     deploy-to-ec2:
         needs: build-and-push
@@ -62,8 +62,8 @@ jobs:
                   script: |
                       set -e
 
-                      IMAGE="rkdrudrn1031/api.kanggyeonggu.store:v1"
-                      CONTAINER="kanggyeonggu-api"
+                      IMAGE="rkdrudrn1031/api.kanggyeonggu.store:v2"
+                      CONTAINER="gateway"
 
                       # .env 파일 경로 찾기 (/home/ubuntu/api/.env)
                       if [ -f "$HOME/api/.env" ]; then
