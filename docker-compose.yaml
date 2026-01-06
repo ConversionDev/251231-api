@@ -17,7 +17,7 @@ services:
   # ===================
   gateway:
     # Docker Hub 이미지 사용
-    image: rkdrudrn1031/api.kanggyeonggu.store:v1
+    image: rkdrudrn1031/api.kanggyeonggu.store:v2
     # 로컬 빌드 사용 시 아래 주석 해제하고 위 image 주석 처리
     # build:
     #   context: .
