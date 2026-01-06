@@ -7,12 +7,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import store.kanggyeonggu.gateway.jwt.JwtService;
+import store.kanggyeonggu.gateway.jwt.RefreshTokenService;
 import store.kanggyeonggu.gateway.oauthservice.response.*;
 import store.kanggyeonggu.gateway.oauthservice.service.OAuthUserService;
+
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 // 카카오 OAuth2 인증 컨트롤러 (Spring MVC)
 @RestController
@@ -22,6 +27,10 @@ public class KakaoController {
     private final KakaoOAuthService kakaoOAuthService;
     private final JwtService jwtService;
     private final OAuthUserService userService;
+    private final RefreshTokenService refreshTokenService;
+    private final RedisTemplate<String, String> redisTemplate;
+    
+    private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
 
     @Value("${kakao.rest-api-key}")
     private String kakaoRestApiKey;
@@ -35,10 +44,18 @@ public class KakaoController {
     @Value("${frontend.callback-url}")
     private String frontendCallbackUrl;
 
-    public KakaoController(KakaoOAuthService kakaoOAuthService, JwtService jwtService, OAuthUserService userService) {
+    public KakaoController(
+            KakaoOAuthService kakaoOAuthService, 
+            JwtService jwtService, 
+            OAuthUserService userService,
+            RefreshTokenService refreshTokenService,
+            RedisTemplate<String, String> redisTemplate
+    ) {
         this.kakaoOAuthService = kakaoOAuthService;
         this.jwtService = jwtService;
         this.userService = userService;
+        this.refreshTokenService = refreshTokenService;
+        this.redisTemplate = redisTemplate;
     }
 
     // 카카오 로그인 URL 생성
@@ -60,10 +77,13 @@ public class KakaoController {
     // 카카오 OAuth2 콜백 처리 (동기 방식)
     // GET /auth/kakao/callback?code=xxx (카카오 표준)
     @GetMapping("/callback")
-    public ResponseEntity<Void> kakaoCallback(@RequestParam(required = false) String code) {
+    public ResponseEntity<Void> kakaoCallback(
+            @RequestParam(required = false) String code,
+            HttpServletResponse httpResponse
+    ) {
         // GET 방식 (카카오 표준)
         if (code != null) {
-            return processCallback(code);
+            return processCallback(code, httpResponse);
         }
 
         // code가 없는 경우 에러
@@ -77,7 +97,7 @@ public class KakaoController {
     }
 
     // 공통 콜백 처리 메서드
-    private ResponseEntity<Void> processCallback(String code) {
+    private ResponseEntity<Void> processCallback(String code, HttpServletResponse httpResponse) {
         try {
             // 1. 액세스 토큰 요청 (동기 처리)
             KakaoTokenResponse tokenResponse = kakaoOAuthService.getAccessToken(code);
@@ -105,13 +125,27 @@ public class KakaoController {
                     profileImageUrl
             );
 
-            // 5. JWT 토큰 생성 (DB에 저장된 user.id 사용)
+            // 5. JWT Access Token 생성 (DB에 저장된 user.id 사용)
             String jwtToken = jwtService.generateToken(user.getId(), user.getNickname());
+            System.out.println("JWT Access Token: " + jwtToken);
 
-            // 생성된 JWT 토큰 출력
-            System.out.println("JWT Token: " + jwtToken);
+            // 6. Refresh Token 생성 및 HttpOnly 쿠키 설정 (XSS 방어)
+            String refreshToken = refreshTokenService.generateRefreshToken();
+            
+            // Redis에 Refresh Token 저장 (userId 매핑)
+            String redisKey = REFRESH_TOKEN_PREFIX + refreshToken;
+            redisTemplate.opsForValue().set(
+                redisKey,
+                user.getId().toString(),
+                refreshTokenService.getRefreshExpiration(),
+                TimeUnit.MILLISECONDS
+            );
+            System.out.println("✅ Refresh Token Redis 저장: " + redisKey);
+            
+            // HttpOnly 쿠키로 Refresh Token 설정
+            refreshTokenService.setRefreshTokenCookie(httpResponse, refreshToken);
 
-            // 5. 프론트엔드로 리다이렉트 (토큰 포함)
+            // 7. 프론트엔드로 리다이렉트 (Access Token은 URL 파라미터로)
             return createRedirectResponse(frontendCallbackUrl, jwtToken, null);
 
         } catch (Exception e) {
@@ -130,7 +164,7 @@ public class KakaoController {
             // baseUrl 유효성 검사
             if (baseUrl == null || baseUrl.trim().isEmpty()) {
                 System.err.println("ERROR: 리다이렉트 URL이 설정되지 않았습니다.");
-                baseUrl = "http://localhost:4000/dashboard"; // 기본값
+                baseUrl = "http://localhost:3000/dashboard"; // 기본값
             }
 
             // URL 생성
@@ -155,7 +189,7 @@ public class KakaoController {
                 System.err.println("ERROR: 잘못된 리다이렉트 URL 형식: " + redirectUrl);
                 System.err.println("ERROR: " + e.getMessage());
                 // 기본 URL로 폴백
-                redirectUri = URI.create("http://localhost:4000/dashboard?error=redirect_url_invalid");
+                redirectUri = URI.create("http://localhost:3000/dashboard?error=redirect_url_invalid");
             }
 
             HttpHeaders headers = new HttpHeaders();
@@ -170,7 +204,7 @@ public class KakaoController {
 
             HttpHeaders headers = new HttpHeaders();
             try {
-                headers.setLocation(URI.create("http://localhost:4000/dashboard?error=redirect_failed"));
+                headers.setLocation(URI.create("http://localhost:3000/dashboard?error=redirect_failed"));
             } catch (Exception ex) {
                 System.err.println("ERROR: 기본 리다이렉트 URL도 실패: " + ex.getMessage());
             }

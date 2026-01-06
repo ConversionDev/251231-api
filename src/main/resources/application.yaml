@@ -46,7 +46,16 @@ server:
 # ============================================================================
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000}
+  expiration: ${JWT_EXPIRATION:900000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+# ============================================================================
+# 쿠키 설정 (Refresh Token용)
+# ============================================================================
+app:
+  cookie:
+    secure: ${APP_COOKIE_SECURE:false}
+    domain: ${APP_COOKIE_DOMAIN:}
 
 # ============================================================================
 # OAuth2 소셜 로그인 설정
@@ -83,7 +92,7 @@ google:
 # Frontend 설정
 # ============================================================================
 frontend:
-  callback-url: ${FRONTEND_CALLBACK_URL:http://localhost:4000/dashboard}
+  callback-url: ${FRONTEND_CALLBACK_URL:http://localhost:3000/dashboard}
 
 # ============================================================================
 # SpringDoc OpenAPI 설정

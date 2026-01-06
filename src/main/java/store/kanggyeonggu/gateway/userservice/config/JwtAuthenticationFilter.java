@@ -29,10 +29,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
-        // Health check 엔드포인트는 인증 불필요
+        // 공개 엔드포인트는 인증 불필요
         String requestUri = request.getRequestURI();
         if (requestUri.equals("/user/health") || 
-            requestUri.startsWith("/actuator/")) {
+            requestUri.startsWith("/actuator/") ||
+            requestUri.startsWith("/auth/") ||
+            requestUri.startsWith("/oauth2/") ||
+            requestUri.startsWith("/api/auth/") ||
+            "OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }

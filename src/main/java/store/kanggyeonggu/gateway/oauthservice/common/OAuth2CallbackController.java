@@ -394,7 +394,7 @@ public class OAuth2CallbackController {
             // baseUrl 유효성 검사
             if (baseUrl == null || baseUrl.trim().isEmpty()) {
                 System.err.println("ERROR: 리다이렉트 URL이 설정되지 않았습니다.");
-                baseUrl = "http://localhost:4000/dashboard"; // 기본값
+                baseUrl = "http://localhost:3000/dashboard"; // 기본값
             }
 
             // URL 생성
@@ -419,7 +419,7 @@ public class OAuth2CallbackController {
                 System.err.println("ERROR: 잘못된 리다이렉트 URL 형식: " + redirectUrl);
                 System.err.println("ERROR: " + e.getMessage());
                 // 기본 URL로 폴백
-                redirectUri = URI.create("http://localhost:4000/dashboard?error=redirect_url_invalid");
+                redirectUri = URI.create("http://localhost:3000/dashboard?error=redirect_url_invalid");
             }
 
             HttpHeaders headers = new HttpHeaders();
@@ -434,7 +434,7 @@ public class OAuth2CallbackController {
 
             HttpHeaders headers = new HttpHeaders();
             try {
-                headers.setLocation(URI.create("http://localhost:4000/dashboard?error=redirect_failed"));
+                headers.setLocation(URI.create("http://localhost:3000/dashboard?error=redirect_failed"));
             } catch (Exception ex) {
                 System.err.println("ERROR: 기본 리다이렉트 URL도 실패: " + ex.getMessage());
             }
